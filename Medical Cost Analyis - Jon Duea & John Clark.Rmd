@@ -1,0 +1,65 @@
+---
+title: "Medical Cost Analysis"
+bibliography: references.bib
+link-citations: TRUE
+author: "Jon Duea & John Clark"
+date: "2025-04-09"
+output: 
+  word_document:
+    reference_docx: word-styles-reference-01.docx
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+# load the data
+insurance<-read.csv("insurance.csv")
+# setting global R chunk options
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+The goal of the STAT 301 project is to apply ANOVA methods to a dataset, so with that in mind we chose this dataset from Kaggle [@choi_medical], the original source can be found here as well [@stednick_2022_data]. This dataset contains information regarding medical costs billed to individuals by insurance as well as information about the individuals including their age, sex, bmi, number of children, smoking status, and region of the US where they reside.
+
+### Research Questions & Variable Selection
+
+The research questions we are aiming to address using this dataset are:
+
+1.  Do medical costs billed by insurance differ significantly based on smoking status (smoker vs. non-smoker) and BMI categories (underweight, normal weight, overweight, obese) independently?
+2.  Is there a significant interaction between smoking status and BMI categories on medical costs billed by insurance, meaning that the effect of smoking on medical costs billed by insurance depends on the BMI category of the individual?
+
+In order to answer these questions we have chosen to utilize three variable from our dataset:
+
+-   BMI (Body Mass Index):
+
+    -   Provides an understanding of body weights that are relatively high or low relative to height.
+
+    -   Uses the ratio of weight to height: $kg/m^2$
+
+    -   According to the CDC, BMI categories for adults 20 and older [@centersfordiseasecontrolandprevention_2024_adult] are as follows:
+
+        -   Underweight: $BMI<18.5$
+
+        -   Healthy Weight: $18.5\le BMI<25$
+
+        -   Overweight: $25 \le BMI < 30$
+
+        -   Obesity: $30 \le BMI$
+
+    -   The dataset records BMI as a numeric variable, but we will be encoding it as a categorical variable with levels according to the CDC's definitions of BMI categories.
+
+-   Smoker (Smoking Status):
+
+    -   Categorical variable, True or False
+
+    -   Indicates whether an individual smokes or not
+
+-   Charges (Medical Costs Billed by Health Insurance):
+
+    -   Numeric variable
+
+    -   Measured in USD
+
+# Conclusion
+
+# References
