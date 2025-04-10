@@ -11,6 +11,7 @@ output:
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(ggplot2)
 # load the data
 insurance<-read.csv("insurance.csv")
 # setting global R chunk options
@@ -18,15 +19,16 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r data preprocessing, include=FALSE}
-preprocessed_data<-insurance%>%
-  # CDC BMI Categories are for adults 20 years of age or older
-  filter(age>=20)%>%
-  select(smoker, bmi, charges)%>%
-  # Assign values to new bmi_category column based on CDC guidance
-  mutate(bmi_category=case_when(bmi<18.5 ~ "Underweight",
-         bmi>=15.5 & bmi < 25 ~ "Healthy Weight",
-         bmi>=25 & bmi < 30 ~ "Overweight",
-         bmi>30 ~ "Obese"))
+insurance$sex<-as.factor(insurance$sex)
+insurance$region<-as.factor(insurance$region)
+summary(insurance)
+table(insurance$sex, insurance$region)
+
+# outliers<-boxplot(insurance$charges, plot=FALSE)$out
+# x<-insurance
+# x<-x[-which(x$charges %in% outliers),]
+# summary(x)
+# table(x$sex, x$region)
 ```
 
 # Introduction
@@ -35,43 +37,52 @@ The goal of the STAT 301 project is to apply ANOVA methods to a dataset, so with
 
 The research questions we are aiming to address using this dataset are:
 
-1.  Do medical costs billed by insurance differ significantly based on smoking status (smoker vs. non-smoker) and BMI categories (underweight, normal weight, overweight, obese) independently?
-    -   Smoking Status:
-        -   $H_0: \mu_{smoker}=\mu_{non-smoker}$
-        -    $H_a: \mu_{smoker}\ne\mu_{non-smoker}$
-    -   BMI Category:
-        -   $H_0: \mu_{underweight}=\mu_{normal}=\mu_{overweight}=\mu_{obese}$
-        -   $H_a:$ At least one BMI categories mean charges significantly differ from the others.
-2.  Is there a significant interaction between smoking status and BMI categories on medical costs billed by insurance, meaning that the effect of smoking on medical costs billed by insurance depends on the BMI category of the individual?
-    -   $H_0:$ There is no interaction between smoking status and BMI categories on medical costs billed by insurance.
-    -   $H_a:$ There is a significant interaction between smoking status and BMI categories on medical costs billed by insurance.
+1.  Do medical costs billed by insurance differ significantly based on sex and region independently?
+    -   Sex:
+        -   $H_0: \mu_{male}=\mu_{female}$
+        -   $H_a: \mu_{male}\ne\mu_{female}$
+    -   Region:
+        -   $H_0: \mu_{northeast}=\mu_{northwest}=\mu_{southeast}=\mu_{southwest}$
+        -   $H_a:$ At least one regions mean charges are significantly different from the others.
+2.  Is there a significant interaction between sex of the primary beneficiary and region on medical costs billed by insurance, meaning that the effect of sex on medical costs billed by insurance depends on the region of the US where the individual resides?
+    -   $H_0:$ There is no interaction between sex and region on medical costs billed by insurance.
+    -   $H_a:$ There is a significant interaction between sex and region on medical costs billed by insurance.
 
 In order to answer these questions we have chosen to utilize three variable from our dataset:
 
--   BMI (Body Mass Index):
+-   Sex:
 
-    -   Provides an understanding of body weights that are relatively high or low relative to height.
+    -   Sex of the primary beneficiary
 
-    -   Uses the ratio of weight to height: $kg/m^2$
+    -   Categorical variable with 2 levels (Male or Female)
 
-    -   According to the CDC, BMI categories for adults 20 and older [@centersfordiseasecontrolandprevention_2024_adult] are as follows:
+-   Region:
 
-        -   Underweight: $BMI<18.5$, Healthy Weight: $18.5\le BMI<25$, Overweight: $25 \le BMI < 30$, Obesity: $30 \le BMI$
+    -   Residential area of the primary beneficiary in the US
 
-    -   The dataset records BMI as a numeric variable, but we will be encoding it as a categorical variable with 4 levels according to the CDC's definitions of BMI categories.
+    -   Categorical variable with 4 levels (Northeast, Northwest, Southeast, Southwest)
 
--   Smoker (Smoking Status):
+-   Charges:
 
-    -   Categorical variable (2 levels), True or False, Indicates whether an individual smokes or not.
-
--   Charges (Medical Costs Billed by Health Insurance):
+    -   Medical Costs Billed by Health Insurance
 
     -   Numeric variable, Measured in USD
 
 # Methods
 
-Since we're working with 2 categorical independent variables and one numeric dependent variable, we have chosen two-way ANOVA as the appropriate method for exploring the data and answering our research questions.
+Since we're working with two categorical independent variables and one numeric dependent variable, a two-way ANOVA was performed to analyze the effect of sex and region on medical costs billed by insurance. A two-way ANOVA is the appropriate method for our analysis because our research questions are interested in investigating the main effect of sex and region (both categorical variables with two or more levels) as well as the interaction between the two.
 
-# Conclusion
+```{r Two-Way Anova, include=FALSE}
+model<-aov(charges~region+sex+region*sex, data=insurance)
+```
+
+```{r Two-Way ANOVA table, echo=FALSE}
+anova_table<-summary(model)
+anova_df<-data.frame(anova_table[[1]])
+
+knitr::kable(anova_df)
+
+interaction.plot(insurance$region,insurance$sex, insurance$charges, fun=mean, xlab="Region of US", ylab="Average Medical Cost (USD)", col=c(2,4), trace.label = "Sex")
+```
 
 # References
