@@ -33,7 +33,7 @@ table(insurance$sex, insurance$region)
 
 # Introduction
 
-The goal of the STAT 301 project is to apply ANOVA methods to a dataset, so with that in mind we chose this dataset from Kaggle [@choi_medical], the original source can be found here as well [@stednick_2022_data]. This dataset contains information regarding medical costs billed to individuals by insurance as well as information about the individuals including their age, sex, bmi, number of children, smoking status, and region of the US where they reside.
+The goal of the STAT 301 project is to apply ANOVA methods to a dataset, so with that in mind we chose this dataset from Kaggle [@choi_medical], the original source can be found here as well [@stednick_2022_data], and was initially prepared for the book *Machine Learning with R* [@lantz_2013_machine]. This dataset contains information regarding medical costs billed to individuals by insurance as well as information about the individuals including their age, sex, bmi, number of children, smoking status, and region of the US where they reside.
 
 The research questions we are aiming to address using this dataset are:
 
