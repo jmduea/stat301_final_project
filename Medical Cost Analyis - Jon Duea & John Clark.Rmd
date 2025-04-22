@@ -12,28 +12,66 @@ output:
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(ggplot2)
+# install.packages("flextable")
+library(flextable)
+# install.packages("broom")
+library(broom)
+library(car)
 # load the data
 insurance<-read.csv("insurance.csv")
 # setting global R chunk options
 knitr::opts_chunk$set(echo = TRUE)
+
+# Set some defaults for our table output
+set_flextable_defaults(
+  font.size=12,
+  border.color="gray",
+  padding.top=3, padding.bottom=3,
+  padding.left=4, padding.right=4,
+  digits = 4, # sig figs
+  decimal.mark=".",
+  # line_spacing = 2.0 # Should go well with the double spaced requirement,
+  line_spacing = 1.3 # Alternative option to save space
+)
 ```
 
 ```{r data preprocessing, include=FALSE}
 insurance$sex<-as.factor(insurance$sex)
 insurance$region<-as.factor(insurance$region)
 summary(insurance)
+# Check for balance
 table(insurance$sex, insurance$region)
 
-# outliers<-boxplot(insurance$charges, plot=FALSE)$out
-# x<-insurance
-# x<-x[-which(x$charges %in% outliers),]
-# summary(x)
-# table(x$sex, x$region)
+```
+
+```{r Assumption checks, include=FALSE}
+# Check for balance
+table(insurance$sex, insurance$region)
+# Check for variable types
+# DV
+is.numeric(insurance$charges)
+# IVS
+is.factor(insurance$region)
+summary(insurance$region)
+is.factor(insurance$sex)
+summary(insurance$sex)
+# Independence assumption reasonably satisfied by virtue of each record pertaining to a unique individual
+# Normality assumption satisfied by virtue of n >= 30
+# Check for equality of variance
+model<-aov(charges~region+sex+region*sex, data=insurance)
+plot(model, which=3) # Constant variance assumption seems reasonably satisfied
+# Check for outliers
+boxplot(insurance$charges, ylab="charges")
+# Outliers detected, but considering the type of data they most likely represent the approximation of true variation within the population since medical costs can vary widely from person to person, won't remove
+```
+
+```{r Two-Way Anova Model, echo=FALSE}
+model<-aov(charges~region+sex+region*sex, data=insurance)
 ```
 
 # Introduction
 
-The goal of the STAT 301 project is to apply ANOVA methods to a dataset, so with that in mind we chose this dataset from Kaggle [@choi_medical], the original source can be found here as well [@stednick_2022_data], and was initially prepared for the book *Machine Learning with R* [@lantz_2013_machine]. This dataset contains information regarding medical costs billed to individuals by insurance as well as information about the individuals including their age, sex, bmi, number of children, smoking status, and region of the US where they reside.
+The goal of the STAT 301 project is to apply ANOVA methods to a dataset, so with that in mind we chose this dataset from Kaggle [@choi_medical], the original source can be found here as well [@stednick_2022_data], and was initially prepared for the book *Machine Learning with R* [@lantz_2013_machine]. This dataset was simulated based on demographic statistics from the U.S. Census Bureau and contains information regarding medical costs billed to individuals by insurance as well as information about the individuals including their age, sex, bmi, number of children, smoking status, and region of the US where they reside.
 
 The research questions we are aiming to address using this dataset are:
 
@@ -50,39 +88,76 @@ The research questions we are aiming to address using this dataset are:
 
 In order to answer these questions we have chosen to utilize three variable from our dataset:
 
--   Sex:
+-   Sex (sex of the primary beneficiary, categorical variable with 2 levels (male or female))
 
-    -   Sex of the primary beneficiary
+-   Region (residential area of the primary beneficiary in the US, categorical variable with 4 levels (northeast, northwest, southeast, southwest)
 
-    -   Categorical variable with 2 levels (Male or Female)
-
--   Region:
-
-    -   Residential area of the primary beneficiary in the US
-
-    -   Categorical variable with 4 levels (Northeast, Northwest, Southeast, Southwest)
-
--   Charges:
-
-    -   Medical Costs Billed by Health Insurance
-
-    -   Numeric variable, Measured in USD
+-   Charges (medical costs billed by health insurance, numeric variable, measured in USD):
 
 # Methods
 
 Since we're working with two categorical independent variables and one numeric dependent variable, a two-way ANOVA was performed to analyze the effect of sex and region on medical costs billed by insurance. A two-way ANOVA is the appropriate method for our analysis because our research questions are interested in investigating the main effect of sex and region (both categorical variables with two or more levels) as well as the interaction between the two.
 
-```{r Two-Way Anova, include=FALSE}
-model<-aov(charges~region+sex+region*sex, data=insurance)
-```
+In preparation for our analysis, we checked that the assumptions about our data for two-way ANOVA were satisfied (located in R chunk "Assumption checks"), and determined that no pre-processing of our data was needed other than converting the region and sex variables from a character to a factor.
+
+# Conclusion
+
+Based on the results of our analysis (see Table 1: Two-way ANOVA results below for the test statistics) we were able to answer the research questions posed at the beginning of this paper, that is:
+
+1.  Do medical costs billed by insurance differ significantly based on sex and region independently?
+    -   Sex:
+        -   $H_0: \mu_{male}=\mu_{female}$ vs $H_a: \mu_{male}\ne\mu_{female}$
+        -   F=2.97533, P-value=.0307\< $\alpha$ = 0.05, we reject the null hypothesis and conclude that there is a statistically significant difference at the .05 significance level in medical costs billed by insurance between the male and female sexes.
+    -   Region:
+        -   $H_0: \mu_{northeast}=\mu_{northwest}=\mu_{southeast}=\mu_{southwest}$ vs $H_a:$ At least one regions mean charges are significantly different from the others.
+        -   F=4.2069, P-value=.0405\< $\alpha$ = 0.05, we reject the null hypothesis and conclude that at the .05 significance level at least one regions mean medical costs billed by insurance differs significantly from the others.
+2.  Is there a significant interaction between sex of the primary beneficiary and region on medical costs billed by insurance, meaning that the effect of sex on medical costs billed by insurance depends on the region of the US where the individual resides?
+    -   $H_0:$ There is no interaction between sex and region on medical costs billed by insurance. vs $H_a:$ There is a significant interaction between sex and region on medical costs billed by insurance.
+    -   F-value = 0.7781, P-value = 0.5062 \> $\alpha$ = 0.05, we fail to reject the null hypothesis; there is insufficient evidence at the .05 significance level to claim a significant interaction between sex and region medical costs billed by insurance exists.
 
 ```{r Two-Way ANOVA table, echo=FALSE}
 anova_table<-summary(model)
 anova_df<-data.frame(anova_table[[1]])
+# PREPROCESSING OF TABLE FOR FLEXTABLE DISPLAY CAUSE FANCY
+anova_df<-setNames(anova_df, c("Df", "SS", "MS", "F-value", "P-value"))
+# Hacky work around needed in order to get region, sex, etc to show in the flex table
+anova_df<-anova_df%>%add_column(Source=c("Region", "Sex", "Region:Sex", "Residuals"), .before="Df")
+# Set to 4 sig figs
+ft<-flextable(anova_df)%>%
+  colformat_double(digits=4, j=c("F-value","P-value"))
+# TODO: Maybe add asterisks to better show significance levels?
 
-knitr::kable(anova_df)
-
-interaction.plot(insurance$region,insurance$sex, insurance$charges, fun=mean, xlab="Region of US", ylab="Average Medical Cost (USD)", col=c(2,4), trace.label = "Sex")
+# Auto formatting to fit better
+ft<-autofit(ft)
+# Display the table with a nice caption
+set_caption(ft, caption = "Table 1: Two-way Anova results", style="Table Caption")
 ```
+
+Diving deeper into where the significant differences lie between the regions, our Tukey analysis unveiled a surprising discovery, that is the only significant difference (at the .05 significance level) found was between the southwest and southeast regions (see Table 2: TukeyHSD results below for full test statistics). This was surprising because it differed from what we would have assumed to be the regions where a significant difference would lie.
+
+```{r TukeyHSD, echo=FALSE}
+tukey<-TukeyHSD(model, which="region")
+# Convert to data frame
+tukeyft<-tidy(tukey)
+# Clean up data frame for better display
+tukeyft<-subset(tukeyft, select=-c(term, null.value))
+# Change names for better display
+tukeyft<-setNames(tukeyft, c("Region", "Diff", "Lower", "Upper", "Adjusted P"))
+# Convert to flextable, 4 sig figs
+tukeyft<-flextable(tukeyft)%>%
+    colformat_double(digits=4)
+# Autofit for better display
+tukeyft<-autofit(tukeyft)
+set_caption(tukeyft, caption = "Table 2: TukeyHSD results", style="Table Caption")
+```
+
+One other pair of regions came close to being significantly different (southeast-northwest, see Figure 1: TukeyHSD Visualization), but as shown by our visualization of the TukeyHSD results all the other regions show little to no significant evidence of differences.
+
+```{r TukeyHSD Figure, fig.cap="Figure 1: TukeyHSD Visualization, differences in mean medical costs billed by insurance (charges) region by region. This makes visible the significant difference in mean medical costs between the southwest and southeast regions, as shown by the 95% confidence interval for the difference in their mean costs not including 0", echo=FALSE}
+par(mar=c(4.1, 10.0, 4.1, 2.1))
+plot(TukeyHSD(model, which="region"), las=2)
+```
+
+It is important to note that while our analysis has given some insight into the differences in medical costs between male and female sexes, as well as four different regions of the US, the relevance of this analysis is limited as the data used was generated from US census bureau statistics and is quite dated as of 2025 (the data was generated for the year the book *Machine Learning with R* [@lantz_2013_machine], was first published i.e. 2013). It is likely that if the same sort of analysis were to be performed with data based off recent census bureau statistics the results may or may not be the same.
 
 # References
